@@ -5,7 +5,13 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors as NN 
 from scipy.stats import mannwhitneyu
 
-def Zu(Pn, Qm, T): 
+def nearest_cosine_similarity(target, ref):
+    target = target / np.linalg.norm(target, axis=1, keepdims=True)
+    ref = ref / np.linalg.norm(ref, axis=1, keepdims=True)
+    d = 1.0 - np.abs(np.matmul(target, ref.T))
+    return np.min(d, axis=1)
+
+def Zu(Pn, Qm, T):
     """Extracts distances to training nearest neighbor
     L(P_n), L(Q_m), and runs Z-scored Mann Whitney U-test. 
     For the global test, this is used on the samples within each cell.
@@ -28,9 +34,13 @@ def Zu(Pn, Qm, T):
     n = Pn.shape[0]
 
     #fit NN model to training sample to get distances to test and generated samples
+    '''
     T_NN = NN(n_neighbors = 1).fit(T)
     LQm, _ = T_NN.kneighbors(X = Qm, n_neighbors = 1)
     LPn, _ = T_NN.kneighbors(X = Pn, n_neighbors = 1)
+    '''
+    LQm = nearest_cosine_similarity(Qm, T)
+    LPn = nearest_cosine_similarity(Pn, T)
 
     #Get Mann-Whitney U score and manually Z-score it using the conditions of null hypothesis H_0 
     u, _ = mannwhitneyu(LQm, LPn, alternative = 'less')
